@@ -20,19 +20,21 @@ contract Voting is Ownable {
 
     struct Proposal {
         string description;
-        uint voteCount; }
+        uint voteCount; 
+        uint ProposalId; } //__\\ J'ai rajouté un ProposalId directement ici pour donner un identifiant à chaque vote 
 
 // -------------------------------------------------------------------------------------------------
 // Variable d'état --------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-    uint public proposalId ; // Donnera un ID à chaque propositions 
-    uint public winningProposalId ; // sera l'ID du gagnant
-    address _addressWinner ; // permettra de stocker l'address du winner
+    uint public totalProposals ; // Donnera un ID à chaque propositions 
+    uint public winningProposalId ; // Sera l'ID du gagnant
+    address _addressWinner ; // Pour stocker l'address du winner
+    uint maxVotes ; //__\\ Pour stocker le nombre de votes du gagnant
 
     WorkflowStatus public Status ;
 
     mapping(address => Voter) voters ;
-    mapping(uint => Proposal) public proposals ;
+    mapping(address => Proposal) public proposals ; //__\\ J'ai modifié la key du mapping de "uint" en "address"
 
     event VoterRegistered(address voterAddress);
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus newStatus);
@@ -45,7 +47,7 @@ contract Voting is Ownable {
 // Fonctions ---------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 
-    function authorize (address _addr) public onlyOwner { 
+    function authorize (address _addr) public onlyOwner {
         voters [_addr].isRegistered = true ;
     }
 
@@ -71,10 +73,10 @@ contract Voting is Ownable {
         require (Status == WorkflowStatus.ProposalsRegistrationStarted, "Les propositions sont pour le moment ferme") ;
         require (voters[msg.sender].isRegistered == true, "vous n etes pas autorise a effectuer cette action") ;
         
-        proposalId ++ ; // on incrémente le numéro de la proposition 
-        proposals[proposalId].description = voteText ; // puis on enregistre la proposition (commençant par 1, plus simple pour voter)
-        voters[msg.sender].votedProposalId = proposalId ; // puis on l'attribue au votant (commençant par 1)
-        emit ProposalRegistered (proposalId) ; // puis on emet l'event
+        totalProposals ++ ; // on incrémente le numéro de la proposition 
+        proposals[msg.sender].description = voteText ; // puis on enregistre la proposition (commençant par 1, plus simple pour voter)
+        voters[msg.sender].votedProposalId = totalProposals ; // puis on l'attribue au votant (commençant par 1)
+        emit ProposalRegistered (totalProposals) ; // puis on emet l'event
     }
 
 // -------------------------------------------------------------------------------------------------
@@ -95,7 +97,7 @@ contract Voting is Ownable {
         //isVoteOpen = false ;
     }
 
-    function vote_Choice (uint _proposal_Choosen) public { // fonction pour voter pour une proposition
+    function vote_Choice (address _addrProposition) public { // fonction pour voter pour une proposition
         Voter storage v = voters[msg.sender]; // vu que ça se répète souvent, autant en créer une variable 
 
         require (Status == WorkflowStatus.VotingSessionStarted, "Les votes sont pour le moment ferme") ;
@@ -103,9 +105,16 @@ contract Voting is Ownable {
         require (!v.hasVoted , "vous avez deja vote") ;
 
         v.hasVoted = true ;
-        v.votedProposalId = _proposal_Choosen ;
-        proposals[_proposal_Choosen].voteCount += 1 ;
-        emit Voted (msg.sender , proposalId);
+        v.votedProposalId = proposals[_addrProposition].ProposalId ; //__\\ On va chercher l'ID via l'address
+        proposals[_addrProposition].voteCount += 1 ;
+
+        //__\\ Détermination du gagnant en temps réel et non plus dans la fonction "getWinner"
+        if (maxVotes < proposals[_addrProposition].voteCount) { //__\\ Si le nombre de votes de la proposition est supérieur au max actuel
+                maxVotes = proposals[_addrProposition].voteCount ; //__\\ On met à jour le nombre max de votes
+                _addressWinner = _addrProposition ; //__\\ Puis on met à jour l'address du gagnant
+            }
+        // Q : comment faire pour determiner le gagnant avec une fonction à part. On peut ? 
+        emit Voted (msg.sender , totalProposals);
     }
 
 // -------------------------------------------------------------------------------------------------
@@ -113,25 +122,18 @@ contract Voting is Ownable {
 // -------------------------------------------------------------------------------------------------
 
     function number_of_Proposals () public view returns (uint) {
-        return proposalId ;
+        return totalProposals ;
     }
 
 // -------------------------------------------------------------------------------------------------
 // Getter ------------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 
-    function getWinner () public returns (uint, uint, string memory) { // un getter pour récupérer le gagnant, l'id de la proposition, le nombre de vote et la proposition 
+    function getWinner () public view returns (address, uint, string memory) { // un getter pour récupérer le gagnant, l'id de la proposition, le nombre de vote et la proposition 
         require (winningProposalId == 0, "le gagnant a deja ete selectionne") ;
         require (Status == WorkflowStatus.VotingSessionEnded, "attention, les votes sont encore ouvert") ;
-        uint maxVotes = 0 ;
-
-        for (uint i=0 ; i < proposalId ; i++) {
-            if (maxVotes < proposals[i].voteCount) {
-                maxVotes = proposals[i].voteCount ;
-                winningProposalId = i ;
-            }
-        }
-        return (winningProposalId, maxVotes, proposals[winningProposalId].description) ;
+        //__\\ J'ai enlevé ici la boucle "for" car on met à jour le gagnant à chaque vote dans "vote_Choice"
+        return (_addressWinner, maxVotes, proposals[_addressWinner].description) ; 
     }
 
 }
