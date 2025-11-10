@@ -44,11 +44,17 @@ contract Voting is Ownable {
     constructor() Ownable(msg.sender){  }
 
 // -------------------------------------------------------------------------------------------------
-// Fonctions ---------------------------------------------------------------------------------------
+// Fonctions whitelist, blacklist ---------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------------------
 
     function authorize (address _addr) public onlyOwner {
         voters [_addr].isRegistered = true ;
+    }
+
+    //__\\ On rajoute une fonction qui permet d'enlever l'autorisation de participer au propositions et votes
+    function desauthorize (address _addr) public onlyOwner {
+        require (voters[_addr].isRegistered == false, "cette addresse n'est deja pas autorise a participer") ;
+        voters[_addr].isRegistered = false ;
     }
 
 // -------------------------------------------------------------------------------------------------
@@ -108,12 +114,11 @@ contract Voting is Ownable {
         v.votedProposalId = proposals[_addrProposition].ProposalId ; //__\\ On va chercher l'ID via l'address
         proposals[_addrProposition].voteCount += 1 ;
 
-        //__\\ Détermination du gagnant en temps réel et non plus dans la fonction "getWinner"
         if (maxVotes < proposals[_addrProposition].voteCount) { //__\\ Si le nombre de votes de la proposition est supérieur au max actuel
                 maxVotes = proposals[_addrProposition].voteCount ; //__\\ On met à jour le nombre max de votes
                 _addressWinner = _addrProposition ; //__\\ Puis on met à jour l'address du gagnant
             }
-        // Q : comment faire pour determiner le gagnant avec une fonction à part. On peut ? 
+
         emit Voted (msg.sender , totalProposals);
     }
 
@@ -132,8 +137,8 @@ contract Voting is Ownable {
     function getWinner () public view returns (address, uint, string memory) { // un getter pour récupérer le gagnant, l'id de la proposition, le nombre de vote et la proposition 
         require (winningProposalId == 0, "le gagnant a deja ete selectionne") ;
         require (Status == WorkflowStatus.VotingSessionEnded, "attention, les votes sont encore ouvert") ;
-        //__\\ J'ai enlevé ici la boucle "for" car on met à jour le gagnant à chaque vote dans "vote_Choice"
-        return (_addressWinner, maxVotes, proposals[_addressWinner].description) ; 
+
+        return (_addressWinner, maxVotes, proposals[_addressWinner].description) ;
     }
 
 }
