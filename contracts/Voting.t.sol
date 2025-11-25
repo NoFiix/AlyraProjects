@@ -13,6 +13,8 @@ contract VotingTest {
     }
 
 
+    // :::::::::: WorkflowStatus Status :::::::::: //
+
     // :::::::::: WorkflowStatus initialisation :::::::::: //
 
     function test_InitialWorkflowStatus() public view {
@@ -21,9 +23,7 @@ contract VotingTest {
         //console.log (actual, expected);
         require(actual == expected, "Initial status must be RegisteringVoters");    }
 
-
-    // :::::::::: WorkflowStatus Change :::::::::: //
-    // On test toutes les fonctions d'initialisation de workflowStatus les uns après les autres 
+    // :::::::::: On test toutes les fonctions de workflowStatus les uns après les autres 
 
     function test_WorkflowStatus_ProposalsRegistrationStarted() public {
         voting.startProposalsRegistering();
@@ -89,42 +89,27 @@ contract VotingTest {
 
     // :::::::::: addVoter :::::::::: //
 
-    /*
-    // Uniquement l'Owner peut ajouter des voters avec addVoter
-    function test_OwnerCanAddVoter() public { 
-        address voter = address(this); // On définit une adresse à whitelist
-        voting.addVoter(voter); // Owner (address(this)) ajoute voter
-        require(voting.getVoter(voter).isRegistered == true,"Voter should be registered by owner"); // On vérifie que le votant est bien enregistré
-    }
-    */
-
     // Lorsque l'Owner utilise addVoter, le workflowStatus doit être à RegisteringVoters, dans tous les autres état ça doit revert
     function test_addVoter_WorkflowStatus() public {
-
     // Cas 1 : état initial => devrait réussir
     (bool success1,) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(1)));
     require(success1, "addVoter should succeed in RegisteringVoters state");
-
     // Cas 2 : proposer registration started => revert attendu
     voting.startProposalsRegistering();
     (bool success2,) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(2)));
     require(!success2, "addVoter should revert in ProposalsRegistrationStarted");
-
     // Cas 3 : proposer registration ended => revert attendu
     voting.endProposalsRegistering();
     (bool success3,) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(3)));
     require(!success3, "addVoter should revert in ProposalsRegistrationEnded");
-
     // Cas 4 : voting session started => revert attendu
     voting.startVotingSession();
     (bool success4,) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(4)));
     require(!success4, "addVoter should revert in VotingSessionStarted");
-
     // Cas 5 : voting session ended => revert attendu
     voting.endVotingSession();
     (bool success5,) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(5)));
     require(!success5, "addVoter should revert in VotingSessionEnded");
-
     // Cas 6 : votes tallied => revert attendu
     voting.tallyVotes();
     (bool success6,) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(6)));
@@ -137,54 +122,5 @@ contract VotingTest {
         (bool success, ) = address(voting).call(abi.encodeWithSignature("addVoter(address)", address(1)));
         require(!success, "addVoter shouldn't add two times a same address");
     }
-
-
-
-    /*
-
-    // :::::::::: addProposal :::::::::: //
-
-    function test_RegisteredVoterCanProposal() public {
-        address voter = address (1) ;
-        voting.addVoter(voter) ;
-        voting.startProposalsRegistering();
-        
-        (bool success, bytes memory data) = address(voting).call(abi.encodeWithSignature("addProposal(string)", "HELLO")); // On simule le message sender = voter
-        require(success, "Registered voter should be able to add a proposal");
-    }
-
-    // :::::::::: addProposal :::::::::: //
-
-    function test_Revert_addProposal_ifNotRegistrationStarted() public {
-        address voter = address(1);
-        voting.addVoter(voter);
-
-        voting.startProposalsRegistering();
-        voting.endProposalsRegistering(); // workflow now OK
-
-        // Call addProposal in the wrong state
-        (bool success,) = address(voting).call(
-            abi.encodeWithSignature("addProposal(string)", "HELLO")
-        );
-
-        require(!success, "Should revert: not in ProposalsRegistrationStarted state");
-    }
-
-    */
-
-
-    // :::::::::: setVote :::::::::: //
-
-    // :::::::::: setVote :::::::::: //
-
-    // :::::::::: tallyVotes :::::::::: //
-
-    // :::::::::: transitions :::::::::: //
-
-    // :::::::::: interdits :::::::::: //
-
-    // :::::::::: getVoter :::::::::: //
-
-    // :::::::::: getOneProposal :::::::::: //
 
 }
