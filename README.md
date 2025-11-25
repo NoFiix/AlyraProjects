@@ -69,7 +69,8 @@ Ces tests vérifient principalement :
     - Impossible d’ajouter deux fois la même adresse
 
 Ces tests Solidity ont été réalisés dans le fichier : contracts/Voting.t.sol
-Nombre total de tests : **9**, tous **passés avec succès** ✔
+
+Nombre total de tests :**9**, tous **passés avec succès** ✔
 
 ### Tests Hardhat + Chai (JavaScript)
 
